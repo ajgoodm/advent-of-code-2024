@@ -1,0 +1,8 @@
+[package]
+name = "grid"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+coord_2d = { path = "../coord_2d" }
+num = { workspace = true }

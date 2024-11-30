@@ -1,0 +1,11 @@
+[workspace]
+
+members = [
+    "aoc",
+    "coord_2d",
+    "grid",
+    "utils",
+]
+
+[workspace.dependencies]
+num = "0.4.3"

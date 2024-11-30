@@ -1,0 +1,13 @@
+[package]
+name = "aoc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+coord_2d = { path =  "../coord_2d" }
+grid = { path = "../grid" }
+utils = { path = "../utils" }
+
+[[bin]]
+name = "day_1"
+path = "src/day_1/main.rs"
