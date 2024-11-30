@@ -47,3 +47,17 @@ where
 {
     input.map(|x| x.parse::<T>().unwrap())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_ints() {
+        let buffer = AocBufReader::from_string("src/data/test_parse_ints.txt");
+        assert_eq!(
+            parse_iter::<usize>(buffer).collect::<Vec<_>>(),
+            vec![1, 2, 3, 4]
+        );
+    }
+}
