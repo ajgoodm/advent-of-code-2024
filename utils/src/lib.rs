@@ -39,13 +39,13 @@ impl Iterator for AocBufReader {
     }
 }
 
-pub fn parse_iter<T: FromStr + Debug>(
-    input: impl Iterator<Item = String>,
+pub fn parse_iter<T: FromStr + Debug, U: AsRef<str>>(
+    input: impl Iterator<Item = U>,
 ) -> impl Iterator<Item = T>
 where
     <T as FromStr>::Err: Debug,
 {
-    input.map(|x| x.parse::<T>().unwrap())
+    input.map(|x| x.as_ref().parse::<T>().unwrap())
 }
 
 #[cfg(test)]
@@ -56,7 +56,7 @@ mod tests {
     fn test_parse_ints() {
         let buffer = AocBufReader::from_string("src/data/test_parse_ints.txt");
         assert_eq!(
-            parse_iter::<usize>(buffer).collect::<Vec<_>>(),
+            parse_iter::<usize, _>(buffer).collect::<Vec<_>>(),
             vec![1, 2, 3, 4]
         );
     }
