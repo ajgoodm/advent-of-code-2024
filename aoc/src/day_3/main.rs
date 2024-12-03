@@ -39,7 +39,6 @@ fn sum_products(s: &str) -> usize {
 fn gated_sum_products(s: String) -> usize {
     let mut do_indices = vec![0usize];
     do_indices.extend(s.match_indices("do()").map(|(idx, _)| idx));
-    do_indices.push(s.len());
     do_indices.dedup();
     let mut dont_indices = s.match_indices("don't()").map(|(idx, _)| idx);
 
