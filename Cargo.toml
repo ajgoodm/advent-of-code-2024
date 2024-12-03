@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 
 members = [
     "aoc",
@@ -9,3 +10,4 @@ members = [
 
 [workspace.dependencies]
 num = "0.4.3"
+regex = "1.11.1"

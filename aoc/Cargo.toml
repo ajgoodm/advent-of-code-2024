@@ -7,6 +7,7 @@ edition = "2021"
 coord_2d = { path =  "../coord_2d" }
 grid = { path = "../grid" }
 utils = { path = "../utils" }
+regex = { workspace = true }
 
 [[bin]]
 name = "day_1"
@@ -15,3 +16,7 @@ path = "src/day_1/main.rs"
 [[bin]]
 name = "day_2"
 path = "src/day_2/main.rs"
+
+[[bin]]
+name = "day_3"
+path = "src/day_3/main.rs"
