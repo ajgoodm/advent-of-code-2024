@@ -9,5 +9,6 @@ members = [
 ]
 
 [workspace.dependencies]
+itertools = "0.13.0"
 num = "0.4.3"
 regex = "1.11.1"

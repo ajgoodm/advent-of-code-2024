@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 coord_2d = { path = "../coord_2d" }
+itertools = { workspace = true }
 num = { workspace = true }
