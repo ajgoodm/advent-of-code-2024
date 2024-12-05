@@ -7,13 +7,15 @@ use thiserror::Error;
 use utils::{parse_iter, AocBufReader};
 
 fn main() {
-    order_pages(AocBufReader::from_string("aoc/src/day_5/data/test.txt"));
+    order_pages(AocBufReader::from_string("aoc/src/day_5/data/part_1.txt"));
 }
 
 fn order_pages(mut input: impl Iterator<Item = String>) {
-    let mut rules: Vec<Ordering> = vec![];
+    let mut rules: HashMap<(usize, usize), Ordering> = HashMap::new();
     while let Ok(rule) = input.next().unwrap().parse::<Ordering>() {
-        rules.push(rule);
+        let small = std::cmp::min(rule.first, rule.later);
+        let big = std::cmp::max(rule.first, rule.later);
+        rules.insert((small, big), rule);
     }
 
     let mut part_1: usize = 0;
@@ -32,7 +34,7 @@ fn order_pages(mut input: impl Iterator<Item = String>) {
     println!("part 2: {}", part_2);
 }
 
-fn sort_invalid(line: String, rules: &Vec<Ordering>) -> SortStatus {
+fn sort_invalid(line: String, rules: &HashMap<(usize, usize), Ordering>) -> SortStatus {
     let nums: Vec<usize> = parse_iter::<usize, &str>(line.split(",")).collect();
     let middle = nums[nums.len() / 2];
 
@@ -43,7 +45,7 @@ fn sort_invalid(line: String, rules: &Vec<Ordering>) -> SortStatus {
         .collect();
 
     let mut is_sorted = true;
-    for rule in rules {
+    for (_, rule) in rules.iter() {
         if let (Some(first), Some(later)) = (
             val_to_position.get(&rule.first),
             val_to_position.get(&rule.later),
@@ -58,12 +60,34 @@ fn sort_invalid(line: String, rules: &Vec<Ordering>) -> SortStatus {
     if is_sorted {
         SortStatus::Sorted(middle)
     } else {
-        SortStatus::NotSorted(sort(nums, rules))
+        SortStatus::NotSorted(bubble_sort(nums, rules))
     }
 }
 
-fn sort(_vals: Vec<usize>, _rules: &[Ordering]) -> usize {
-    1
+fn bubble_sort(mut vals: Vec<usize>, rules: &HashMap<(usize, usize), Ordering>) -> usize {
+    let mut swap_occurred = false;
+    loop {
+        for idx in 0..vals.len() - 1 {
+            let left = vals[idx];
+            let right = vals[idx + 1];
+
+            let small = std::cmp::min(left, right);
+            let big = std::cmp::max(left, right);
+            if let Some(comparison_rule) = rules.get(&(small, big)) {
+                if comparison_rule.first != left {
+                    vals.swap(idx, idx + 1);
+                    swap_occurred = true
+                }
+            }
+        }
+
+        if !swap_occurred {
+            break;
+        }
+        swap_occurred = false;
+    }
+
+    vals[vals.len() / 2]
 }
 
 enum SortStatus {
