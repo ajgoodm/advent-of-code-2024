@@ -12,3 +12,4 @@ members = [
 itertools = "0.13.0"
 num = "0.4.3"
 regex = "1.11.1"
+thiserror = "2.0.4"

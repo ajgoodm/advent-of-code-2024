@@ -8,6 +8,7 @@ coord_2d = { path =  "../coord_2d" }
 grid = { path = "../grid" }
 utils = { path = "../utils" }
 regex = { workspace = true }
+thiserror = { workspace = true }
 
 [[bin]]
 name = "day_1"
@@ -24,3 +25,7 @@ path = "src/day_3/main.rs"
 [[bin]]
 name = "day_4"
 path = "src/day_4/main.rs"
+
+[[bin]]
+name = "day_5"
+path = "src/day_5/main.rs"
