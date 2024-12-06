@@ -3,6 +3,7 @@ resolver = "2"
 
 members = [
     "aoc",
+    "direction",
     "coord_2d",
     "grid",
     "utils",

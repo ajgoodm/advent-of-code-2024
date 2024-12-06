@@ -1,8 +1,7 @@
 [package]
-name = "coord_2d"
+name = "direction"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-direction = { path = "../direction" }
 num = { workspace = true }

@@ -27,9 +27,20 @@ impl<T: Copy + Display + PartialEq> Grid<T> {
         }
     }
 
+    pub fn set(&mut self, val: T, row_idx: usize, col_idx: usize) {
+        if row_idx >= self.n_rows || col_idx >= self.n_cols {
+            panic!(
+                "Invalid set coord ({}, {}); n_rows: {}, n_cols: {}",
+                row_idx, col_idx, self.n_rows, self.n_cols
+            )
+        }
+
+        self.inner[row_idx][col_idx] = val;
+    }
+
     pub fn get<S: Unsigned + Copy + PartialOrd + Eq + Hash + PartialOrd<usize> + Into<usize>>(
         &self,
-        coord: Coord2D<S>,
+        coord: &Coord2D<S>,
     ) -> Option<T> {
         if coord.row >= self.n_rows || coord.col >= self.n_cols {
             None
@@ -98,7 +109,7 @@ impl<T: Copy + Display + PartialEq> Grid<T> {
         (row_idx..self.n_rows)
             .zip_longest(col_idx..self.n_cols)
             .filter_map(|x| match x {
-                Both(row, col) => Some(self.get(Coord2D::new(row, col)).unwrap()),
+                Both(row, col) => Some(self.get(&Coord2D::new(row, col)).unwrap()),
                 _ => None,
             })
             .collect()
@@ -126,7 +137,7 @@ impl<T: Copy + Display + PartialEq> Grid<T> {
             .rev()
             .zip_longest(col_idx..self.n_cols)
             .filter_map(|x| match x {
-                Both(row, col) => Some(self.get(Coord2D::new(row, col)).unwrap()),
+                Both(row, col) => Some(self.get(&Coord2D::new(row, col)).unwrap()),
                 _ => None,
             })
             .collect()

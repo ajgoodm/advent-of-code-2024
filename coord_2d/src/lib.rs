@@ -3,6 +3,8 @@ use std::hash::Hash;
 
 use num::traits::Unsigned;
 
+use direction::CardinalDirection;
+
 #[derive(Hash, Eq, PartialEq, Debug, Clone)]
 pub struct Coord2D<T: Unsigned + PartialOrd + Eq + Hash + Copy> {
     pub row: T,
@@ -60,6 +62,39 @@ impl<T: Unsigned + PartialOrd + Eq + Copy + Hash> Coord2D<T> {
         ]);
 
         result
+    }
+
+    pub fn north(&self) -> Option<Self> {
+        if self.row > T::zero() {
+            Some(Self::new(self.row - T::one(), self.col))
+        } else {
+            None
+        }
+    }
+
+    pub fn east(&self) -> Self {
+        Self::new(self.row, self.col + T::one())
+    }
+
+    pub fn south(&self) -> Self {
+        Self::new(self.row + T::one(), self.col)
+    }
+
+    pub fn west(&self) -> Option<Self> {
+        if self.col > T::zero() {
+            Some(Self::new(self.row, self.col - T::one()))
+        } else {
+            None
+        }
+    }
+
+    pub fn adjacent(&self, direction: &CardinalDirection) -> Option<Self> {
+        match direction {
+            CardinalDirection::North => self.north(),
+            CardinalDirection::East => Some(self.east()),
+            CardinalDirection::South => Some(self.south()),
+            CardinalDirection::West => self.west(),
+        }
     }
 }
 
