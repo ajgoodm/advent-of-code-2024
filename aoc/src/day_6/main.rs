@@ -7,6 +7,7 @@ use utils::AocBufReader;
 
 fn main() {
     part_1(AocBufReader::from_string("aoc/src/day_6/data/part_1.txt"));
+    part_2(AocBufReader::from_string("aoc/src/day_6/data/part_1.txt"));
 }
 
 fn part_1(input: AocBufReader) {
@@ -14,17 +15,59 @@ fn part_1(input: AocBufReader) {
     println!("part 1: {}", part_1_inner(grid));
 }
 
-fn part_1_inner(grid: Grid<char>) -> usize {
-    let mut map = Map::new(grid);
-    let mut positions: HashSet<Coord2D<usize>> = HashSet::new();
-    positions.insert(map.position.clone());
-    while let Some(next) = map.next() {
-        positions.insert(next);
-    }
-
-    positions.len()
+fn part_2(input: AocBufReader) {
+    let grid: Grid<char> = from_line_iter(input);
+    println!("part 2: {}", part_2_inner(grid));
 }
 
+fn part_1_inner(grid: Grid<char>) -> usize {
+    let map = Map::new(grid);
+    match run_to_completion(map) {
+        CompletionCondition::WalkedOffTheMap(n_sites) => n_sites,
+        CompletionCondition::Looped => panic!("we weren't supposed to loop!"),
+    }
+}
+
+fn part_2_inner(grid: Grid<char>) -> usize {
+    let map = Map::new(grid);
+
+    let mut result: usize = 0;
+    for row_idx in 0..map.grid.n_rows {
+        for col_idx in 0..map.grid.n_cols {
+            let mut new_map = map.clone();
+            new_map.grid.set('#', row_idx, col_idx);
+            match run_to_completion(new_map) {
+                CompletionCondition::Looped => result += 1,
+                CompletionCondition::WalkedOffTheMap(_) => (),
+            }
+        }
+    }
+
+    result
+}
+
+enum CompletionCondition {
+    WalkedOffTheMap(usize),
+    Looped,
+}
+
+fn run_to_completion(mut map: Map) -> CompletionCondition {
+    let mut positions: HashSet<Coord2D<usize>> = HashSet::new();
+    let mut state: HashSet<(Coord2D<usize>, CardinalDirection)> = HashSet::new();
+    positions.insert(map.position.clone());
+    while let Some(next) = map.next() {
+        if state.contains(&(next.clone(), map.direction)) {
+            return CompletionCondition::Looped;
+        } else {
+            state.insert((map.position.clone(), map.direction));
+            positions.insert(next);
+        }
+    }
+
+    CompletionCondition::WalkedOffTheMap(positions.len())
+}
+
+#[derive(Clone)]
 struct Map {
     position: Coord2D<usize>,
     direction: CardinalDirection,
@@ -87,5 +130,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_part_1() {}
+    fn test_part1_2() {
+        let grid: Grid<char> = from_line_iter(
+            [
+                "....#.....",
+                ".........#",
+                "..........",
+                "..#.......",
+                ".......#..",
+                "..........",
+                ".#..^.....",
+                "........#.",
+                "#.........",
+                "......#...",
+            ]
+            .into_iter()
+            .map(|x| x.to_string()),
+        );
+        assert_eq!(part_2_inner(grid), 6);
+    }
 }

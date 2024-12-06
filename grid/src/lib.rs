@@ -9,6 +9,7 @@ use num::traits::Unsigned;
 
 use coord_2d::Coord2D;
 
+#[derive(Clone)]
 pub struct Grid<T: Copy + Display + PartialEq> {
     inner: Vec<Vec<T>>,
     pub n_rows: usize,
