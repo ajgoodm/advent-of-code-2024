@@ -1,5 +1,8 @@
 use std::collections::HashSet;
 
+use itertools::Itertools;
+use rayon::prelude::*;
+
 use coord_2d::Coord2D;
 use direction::CardinalDirection;
 use grid::{from_line_iter, Grid};
@@ -31,19 +34,23 @@ fn part_1_inner(grid: Grid<char>) -> usize {
 fn part_2_inner(grid: Grid<char>) -> usize {
     let map = Map::new(grid);
 
-    let mut result: usize = 0;
-    for row_idx in 0..map.grid.n_rows {
-        for col_idx in 0..map.grid.n_cols {
-            let mut new_map = map.clone();
-            new_map.grid.set('#', row_idx, col_idx);
-            match run_to_completion(new_map) {
-                CompletionCondition::Looped => result += 1,
-                CompletionCondition::WalkedOffTheMap(_) => (),
-            }
-        }
-    }
+    let row_cols: Vec<(usize, usize)> = (0..map.grid.n_rows)
+        .cartesian_product(0..map.grid.n_cols)
+        .filter(|(r, c)| map.position != Coord2D::new(*r, *c))
+        .collect();
 
-    result
+    row_cols
+        .par_iter()
+        .map(|(row_idx, col_idx)| {
+            let mut new_map = map.clone();
+            new_map.grid.set('#', *row_idx, *col_idx);
+            run_to_completion(new_map)
+        })
+        .filter(|x| match x {
+            CompletionCondition::Looped => true,
+            CompletionCondition::WalkedOffTheMap(_) => false,
+        })
+        .count()
 }
 
 enum CompletionCondition {

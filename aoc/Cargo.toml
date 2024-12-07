@@ -7,7 +7,9 @@ edition = "2021"
 coord_2d = { path =  "../coord_2d" }
 direction = { path =  "../direction" }
 grid = { path = "../grid" }
+itertools = { workspace = true }
 utils = { path = "../utils" }
+rayon = { workspace = true }
 regex = { workspace = true }
 thiserror = { workspace = true }
 

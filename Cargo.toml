@@ -12,5 +12,6 @@ members = [
 [workspace.dependencies]
 itertools = "0.13.0"
 num = "0.4.3"
+rayon = "1.10.0"
 regex = "1.11.1"
 thiserror = "2.0.4"
