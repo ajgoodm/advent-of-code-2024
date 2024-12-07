@@ -66,7 +66,7 @@ fn is_solvable(val: usize, args: &[usize], operations: &[BinaryOperation]) -> bo
     let n_args = args.len();
 
     // this is the base case! If we have two arguments, does their
-    // sum or product equal the value?
+    // sum or product or concatenation equal the value?
     if n_args == 2 {
         return operations
             .iter()
