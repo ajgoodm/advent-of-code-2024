@@ -3,16 +3,17 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use num::traits::Unsigned;
+use num::Integer;
 
 use direction::CardinalDirection;
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone)]
-pub struct Coord2D<T: Unsigned + PartialOrd + Eq + Hash + Copy> {
+pub struct Coord2D<T: Integer + PartialOrd + Eq + Hash + Copy> {
     pub row: T,
     pub col: T,
 }
 
-impl<T: Unsigned + PartialOrd + Eq + Copy + Hash> Coord2D<T> {
+impl<T: Integer + PartialOrd + Eq + Copy + Hash> Coord2D<T> {
     pub fn new(row: T, col: T) -> Self {
         Self { row, col }
     }
@@ -24,7 +25,9 @@ impl<T: Unsigned + PartialOrd + Eq + Copy + Hash> Coord2D<T> {
     {
         Coord2D::new(row.try_into().unwrap(), col.try_into().unwrap())
     }
+}
 
+impl<T: Integer + Unsigned + PartialOrd + Eq + Copy + Hash> Coord2D<T> {
     pub fn neighbors(&self) -> Vec<Self> {
         let mut result: Vec<Self> = Vec::new();
 

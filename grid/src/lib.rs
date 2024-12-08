@@ -6,6 +6,7 @@ use std::hash::Hash;
 use itertools::EitherOrBoth::Both;
 use itertools::Itertools;
 use num::traits::Unsigned;
+use num::Integer;
 
 use coord_2d::Coord2D;
 
@@ -39,7 +40,9 @@ impl<T: Copy + Display + PartialEq> Grid<T> {
         self.inner[row_idx][col_idx] = val;
     }
 
-    pub fn get<S: Unsigned + Copy + PartialOrd + Eq + Hash + PartialOrd<usize> + Into<usize>>(
+    pub fn get<
+        S: Unsigned + Integer + Copy + PartialOrd + Eq + Hash + PartialOrd<usize> + Into<usize>,
+    >(
         &self,
         coord: &Coord2D<S>,
     ) -> Option<T> {
@@ -153,11 +156,18 @@ impl<T: Copy + Display + PartialEq> Grid<T> {
             .map(|(row_idx, col_idx)| self.ne_diagonal(row_idx, col_idx))
     }
 
-    pub fn coords_and_vals(&self) -> impl Iterator<Item = (Coord2D<usize>, T)> + use<'_, T> {
+    pub fn coords_and_vals<S>(&self) -> impl Iterator<Item = (Coord2D<S>, T)> + use<'_, T, S>
+    where
+        S: Integer + PartialOrd + Eq + Hash + Copy + TryFrom<usize>,
+        <S as TryFrom<usize>>::Error: std::fmt::Debug,
+    {
         (0..self.n_rows)
             .cartesian_product(0..self.n_cols)
             .map(|(row_idx, col_idx)| {
-                (Coord2D::new(row_idx, col_idx), self.inner[row_idx][col_idx])
+                (
+                    Coord2D::new(row_idx.try_into().unwrap(), col_idx.try_into().unwrap()),
+                    self.inner[row_idx][col_idx],
+                )
             })
     }
 

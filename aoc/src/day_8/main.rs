@@ -21,7 +21,7 @@ fn part_2(input: AocBufReader) {
 
 fn part_1_inner(grid: Grid<char>) -> usize {
     let mut char_positions: HashMap<char, Vec<(isize, isize)>> = HashMap::new();
-    for (coord, c) in grid.coords_and_vals().filter(|&(_, c)| c != '.') {
+    for (coord, c) in grid.coords_and_vals::<usize>().filter(|&(_, c)| c != '.') {
         char_positions.entry(c).or_default().push((
             isize::try_from(coord.row).unwrap(),
             isize::try_from(coord.col).unwrap(),
@@ -70,7 +70,7 @@ fn part_1_inner(grid: Grid<char>) -> usize {
 
 fn part_2_inner(grid: Grid<char>) -> usize {
     let mut char_positions: HashMap<char, Vec<(isize, isize)>> = HashMap::new();
-    for (coord, c) in grid.coords_and_vals().filter(|&(_, c)| c != '.') {
+    for (coord, c) in grid.coords_and_vals::<usize>().filter(|&(_, c)| c != '.') {
         char_positions.entry(c).or_default().push((
             isize::try_from(coord.row).unwrap(),
             isize::try_from(coord.col).unwrap(),
