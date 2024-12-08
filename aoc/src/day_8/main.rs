@@ -98,10 +98,7 @@ fn part_2_inner(grid: Grid<char>) -> usize {
                         {
                             break;
                         }
-                        let point = Coord2D::new(
-                            usize::try_from(candidate.0).unwrap(),
-                            usize::try_from(candidate.1).unwrap(),
-                        );
+                        let point = Coord2D::from_signed(candidate.0, candidate.1);
                         if grid.get(&point).is_some() {
                             nodes.push(point);
                         }
@@ -118,10 +115,7 @@ fn part_2_inner(grid: Grid<char>) -> usize {
                         {
                             break;
                         }
-                        let point = Coord2D::new(
-                            usize::try_from(candidate.0).unwrap(),
-                            usize::try_from(candidate.1).unwrap(),
-                        );
+                        let point = Coord2D::from_signed(candidate.0, candidate.1);
                         if grid.get(&point).is_some() {
                             nodes.push(point);
                         }

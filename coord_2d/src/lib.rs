@@ -1,4 +1,5 @@
 use std::cmp::{Eq, PartialOrd};
+use std::fmt::Debug;
 use std::hash::Hash;
 
 use num::traits::Unsigned;
@@ -14,6 +15,14 @@ pub struct Coord2D<T: Unsigned + PartialOrd + Eq + Hash + Copy> {
 impl<T: Unsigned + PartialOrd + Eq + Copy + Hash> Coord2D<T> {
     pub fn new(row: T, col: T) -> Self {
         Self { row, col }
+    }
+
+    pub fn from_signed<S>(row: S, col: S) -> Self
+    where
+        S: TryInto<T>,
+        <S as TryInto<T>>::Error: std::fmt::Debug,
+    {
+        Coord2D::new(row.try_into().unwrap(), col.try_into().unwrap())
     }
 
     pub fn neighbors(&self) -> Vec<Self> {
