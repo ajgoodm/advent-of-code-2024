@@ -6,11 +6,17 @@ use utils::AocBufReader;
 
 fn main() {
     part_1(AocBufReader::from_string("aoc/src/day_8/data/part_1.txt"));
+    part_2(AocBufReader::from_string("aoc/src/day_8/data/part_1.txt"));
 }
 
 fn part_1(input: AocBufReader) {
     let grid: Grid<char> = from_line_iter(input);
     println!("{}", part_1_inner(grid))
+}
+
+fn part_2(input: AocBufReader) {
+    let grid: Grid<char> = from_line_iter(input);
+    println!("{}", part_2_inner(grid))
 }
 
 fn part_1_inner(grid: Grid<char>) -> usize {
@@ -53,6 +59,73 @@ fn part_1_inner(grid: Grid<char>) -> usize {
                         if grid.get(&point).is_some() {
                             nodes.push(point);
                         }
+                    }
+                }
+            }
+            nodes
+        })
+        .collect::<HashSet<Coord2D<usize>>>()
+        .len()
+}
+
+fn part_2_inner(grid: Grid<char>) -> usize {
+    let mut char_positions: HashMap<char, Vec<(isize, isize)>> = HashMap::new();
+    for (coord, c) in grid.coords_and_vals().filter(|&(_, c)| c != '.') {
+        char_positions.entry(c).or_default().push((
+            isize::try_from(coord.row).unwrap(),
+            isize::try_from(coord.col).unwrap(),
+        ));
+    }
+
+    char_positions
+        .into_iter()
+        .flat_map(|(_, antennae_loc)| {
+            let mut nodes: Vec<Coord2D<usize>> = Vec::new();
+            let n_locations = antennae_loc.len();
+            for first_idx in 0..n_locations {
+                for second_idx in (first_idx + 1)..n_locations {
+                    let first = &antennae_loc[first_idx];
+                    let second = &antennae_loc[second_idx];
+                    let v: (isize, isize) = (first.0 - second.0, first.1 - second.1);
+
+                    let mut harmonic = 0isize;
+                    loop {
+                        let candidate = (first.0 + v.0 * harmonic, first.1 + v.1 * harmonic);
+                        if candidate.0 < 0
+                            || candidate.1 < 0
+                            || candidate.0 >= grid.n_rows as isize
+                            || candidate.1 >= grid.n_cols as isize
+                        {
+                            break;
+                        }
+                        let point = Coord2D::new(
+                            usize::try_from(candidate.0).unwrap(),
+                            usize::try_from(candidate.1).unwrap(),
+                        );
+                        if grid.get(&point).is_some() {
+                            nodes.push(point);
+                        }
+                        harmonic += 1;
+                    }
+
+                    let mut harmonic = 0isize;
+                    loop {
+                        let candidate = (second.0 - v.0 * harmonic, second.1 - v.1 * harmonic);
+                        if candidate.0 < 0
+                            || candidate.1 < 0
+                            || candidate.0 >= grid.n_rows as isize
+                            || candidate.1 >= grid.n_cols as isize
+                        {
+                            break;
+                        }
+                        let point = Coord2D::new(
+                            usize::try_from(candidate.0).unwrap(),
+                            usize::try_from(candidate.1).unwrap(),
+                        );
+                        if grid.get(&point).is_some() {
+                            nodes.push(point);
+                        }
+                        harmonic += 1;
                     }
                 }
             }
