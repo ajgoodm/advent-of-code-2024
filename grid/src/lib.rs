@@ -153,6 +153,14 @@ impl<T: Copy + Display + PartialEq> Grid<T> {
             .map(|(row_idx, col_idx)| self.ne_diagonal(row_idx, col_idx))
     }
 
+    pub fn coords_and_vals(&self) -> impl Iterator<Item = (Coord2D<usize>, T)> + use<'_, T> {
+        (0..self.n_rows)
+            .cartesian_product(0..self.n_cols)
+            .map(|(row_idx, col_idx)| {
+                (Coord2D::new(row_idx, col_idx), self.inner[row_idx][col_idx])
+            })
+    }
+
     pub fn print(&self) {
         for line in self.inner.iter() {
             println!("{}", line.iter().map(|t| t.to_string()).collect::<String>());
