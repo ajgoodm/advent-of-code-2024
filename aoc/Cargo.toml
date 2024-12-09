@@ -11,6 +11,7 @@ itertools = { workspace = true }
 utils = { path = "../utils" }
 rayon = { workspace = true }
 regex = { workspace = true }
+span_1d = { path = "../span_1d" }
 thiserror = { workspace = true }
 
 [[bin]]
@@ -44,3 +45,7 @@ path = "src/day_7/main.rs"
 [[bin]]
 name = "day_8"
 path = "src/day_8/main.rs"
+
+[[bin]]
+name = "day_9"
+path = "src/day_9/main.rs"
