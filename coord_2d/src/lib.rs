@@ -1,9 +1,10 @@
 use std::cmp::{Eq, PartialOrd};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::ops;
 
 use num::traits::Unsigned;
-use num::Integer;
+use num::{Integer, Signed};
 
 use direction::CardinalDirection;
 
@@ -18,12 +19,28 @@ impl<T: Integer + PartialOrd + Eq + Copy + Hash> Coord2D<T> {
         Self { row, col }
     }
 
-    pub fn from_signed<S>(row: S, col: S) -> Self
-    where
-        S: TryInto<T>,
-        <S as TryInto<T>>::Error: std::fmt::Debug,
-    {
-        Coord2D::new(row.try_into().unwrap(), col.try_into().unwrap())
+    pub fn mul_scalar(&self, v: T) -> Self {
+        Self::new(self.row * v, self.col * v)
+    }
+
+    pub fn is_nonnegative(&self) -> bool {
+        self.row >= T::zero() && self.col >= T::zero()
+    }
+}
+
+impl<T: Integer + PartialOrd + Eq + Copy + Hash> ops::Add<Coord2D<T>> for Coord2D<T> {
+    type Output = Self;
+
+    fn add(self, _rhs: Coord2D<T>) -> Self {
+        Coord2D::new(self.row + _rhs.row, self.col + _rhs.col)
+    }
+}
+
+impl<T: Integer + Signed + PartialOrd + Eq + Copy + Hash> ops::Sub<Coord2D<T>> for Coord2D<T> {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Coord2D::new(self.row - other.row, self.col - other.col)
     }
 }
 

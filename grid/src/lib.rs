@@ -5,7 +5,6 @@ use std::hash::Hash;
 
 use itertools::EitherOrBoth::Both;
 use itertools::Itertools;
-use num::traits::Unsigned;
 use num::Integer;
 
 use coord_2d::Coord2D;
@@ -40,16 +39,18 @@ impl<T: Copy + Display + PartialEq> Grid<T> {
         self.inner[row_idx][col_idx] = val;
     }
 
-    pub fn get<
-        S: Unsigned + Integer + Copy + PartialOrd + Eq + Hash + PartialOrd<usize> + Into<usize>,
-    >(
-        &self,
-        coord: &Coord2D<S>,
-    ) -> Option<T> {
-        if coord.row >= self.n_rows || coord.col >= self.n_cols {
+    pub fn get<S>(&self, coord: &Coord2D<S>) -> Option<T>
+    where
+        S: Integer + Copy + PartialOrd + Eq + Hash + TryInto<usize>,
+        <S as TryInto<usize>>::Error: std::fmt::Debug,
+    {
+        let row: usize = coord.row.try_into().unwrap();
+        let col: usize = coord.col.try_into().unwrap();
+
+        if row >= self.n_rows || col >= self.n_cols {
             None
         } else {
-            Some(self.inner[coord.row.into()][coord.col.into()])
+            Some(self.inner[row][col])
         }
     }
 
