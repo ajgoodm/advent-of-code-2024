@@ -30,12 +30,15 @@ fn part_2_inner(s: String) -> usize {
 
 struct Disk {
     data: Vec<Option<usize>>,
-    full_idx_stack: Vec<usize>,
-    file_span_stack: Vec<Span1D<usize>>,
-    empty_idx_stack: VecDeque<usize>,
+    full_idx_stack: Vec<usize>,          // used for part 1
+    empty_idx_stack: VecDeque<usize>,    // used for part 1
+    file_span_stack: Vec<Span1D<usize>>, // used for part 2
 }
 
 impl Disk {
+    /// Swap the values in the last full index with the first
+    /// empty index until the next empty index occurs after the
+    /// first full index (the disk is compacted)
     fn compact_part_1(&mut self) {
         while let Some(next_empty_idx) = self.empty_idx_stack.pop_back() {
             let next_full_idx = self.full_idx_stack.pop().unwrap();
@@ -48,6 +51,8 @@ impl Disk {
         }
     }
 
+    /// Move the contents of a file (a sequence of blocks)
+    /// to the destination index (swapping with the empty values there)
     fn move_file(&mut self, file: &Span1D<usize>, dest: usize) {
         for block_idx in 0..file.len {
             self.data.swap(file.start + block_idx, dest + block_idx);
@@ -69,7 +74,7 @@ impl Disk {
                 }
 
                 if empty_span.len >= file.len {
-                    // we found a home! we cna move the file
+                    // we found a home! we can move the file
                     self.move_file(&file, empty_span.start);
                     break;
                 }
@@ -88,6 +93,7 @@ impl Disk {
             .sum()
     }
 
+    /// Return a vector of contiguous empty regions on the disk
     fn empty_spans(&self) -> Vec<Span1D<usize>> {
         let mut result: Vec<Span1D<usize>> = Vec::new();
         let mut current_span: Option<Span1D<usize>> = None;
@@ -147,8 +153,8 @@ impl Disk {
         Self {
             data,
             full_idx_stack,
-            file_span_stack,
             empty_idx_stack,
+            file_span_stack,
         }
     }
 
