@@ -5,7 +5,7 @@ use rayon::prelude::*;
 
 use coord_2d::Coord2D;
 use direction::CardinalDirection;
-use grid::{from_line_iter, Grid};
+use grid::{char_grid_from_line, Grid};
 use utils::AocBufReader;
 
 fn main() {
@@ -14,12 +14,12 @@ fn main() {
 }
 
 fn part_1(input: AocBufReader) {
-    let grid: Grid<char> = from_line_iter(input);
+    let grid = char_grid_from_line(input);
     println!("part 1: {}", part_1_inner(grid));
 }
 
 fn part_2(input: AocBufReader) {
-    let grid: Grid<char> = from_line_iter(input);
+    let grid = char_grid_from_line(input);
     println!("part 2: {}", part_2_inner(grid));
 }
 
@@ -138,7 +138,7 @@ mod tests {
 
     #[test]
     fn test_part1_2() {
-        let grid: Grid<char> = from_line_iter(
+        let grid = char_grid_from_line(
             [
                 "....#.....",
                 ".........#",

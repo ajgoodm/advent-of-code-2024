@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use coord_2d::Coord2D;
-use grid::{from_line_iter, Grid};
+use grid::{char_grid_from_line, Grid};
 use utils::AocBufReader;
 
 fn main() {
@@ -10,12 +10,12 @@ fn main() {
 }
 
 fn part_1(input: AocBufReader) {
-    let grid: Grid<char> = from_line_iter(input);
+    let grid = char_grid_from_line(input);
     println!("{}", part_1_inner(grid))
 }
 
 fn part_2(input: AocBufReader) {
-    let grid: Grid<char> = from_line_iter(input);
+    let grid = char_grid_from_line(input);
     println!("{}", part_2_inner(grid))
 }
 
