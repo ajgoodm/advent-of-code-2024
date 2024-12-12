@@ -47,11 +47,25 @@ impl Region {
         Self { plant_type, coords }
     }
 
-    /// The number of sides is equal to the number
-    /// of times line dividing the region for the external
-    /// area changes directions. Count the number of corners
-    /// in this imaginary line bounding the region
-    fn n_sides(&self) -> usize {
+    /// The number of sides is equal to the number of times line dividing
+    /// the region from the external area changes directions. This function counts
+    /// the number of corners in this imaginary line bounding the region.
+    /// It does this by counting the number of corners touched by each garden plot.
+    /// The trick is to not overcount corners...
+    /// This turns out to be very annoying
+    ///
+    /// For instance, if a garden plot touches one neighbor, then it touches 2 corners:
+    ///
+    /// [ ] [ ]|
+    ///        +---+ <--
+    /// [ ] [^] [*]|      we say this garden plot has two corners (allocating the corners)
+    ///        +---+ <--  (in our counting scheme, the other two corners (+) belong to the block
+    /// [ ] [ ]|          labelled ^, which is touching 4 neighbors
+    ///
+    /// It goes on laboriously for the case where the garden plot has 2, 3, or 4 neighbors;
+    /// each case getting its own function called by this one. We sum up the corners,
+    /// and we get the number of sides of the perimeter
+    fn n_corners(&self) -> usize {
         self.coords
             .iter()
             .cloned()
@@ -72,16 +86,33 @@ impl Region {
                 match n_touching {
                     0 => 4, // this is a region of area 1 (4 corners)
                     1 => 2, // this block is a "finger" - and contributes 2 corners
-                    2 => self.touch_2_corners(&member),
-                    3 => self.touch_3_corners(&member),
-                    4 => self.touch_4_corners(&member),
+                    2 => self.count_corners_touch_2(&member),
+                    3 => self.count_corners_touch_3(&member),
+                    4 => self.count_corners_touch_4(&member),
                     _ => panic!(),
                 }
             })
             .sum()
     }
 
-    fn touch_2_corners(&self, coord: &Coord2D<usize>) -> usize {
+    /// Garden plots that are touching 2 neighbors can be put in 3 categories (up to rotation):
+    ///
+    /// A)
+    /// -----------
+    /// [ ] [*] [ ]  <-- the 2 neighbors of the starred garden plot are in a straight line
+    /// -----------      the starred plot has no corners
+    ///
+    /// B)
+    /// -------+
+    /// [ ] [*]|     <-- the 2 neighbors of the starred garden plot make a right angle;
+    /// [ ] [ ]|         the interior of the angle is filled; the starred plot has one corner
+    ///
+    /// C)
+    /// -------+
+    /// [ ] [*]|     <-- the 2 neighbors of the starred garden plot make a right angle;
+    /// ---+   |         the interior of the angle is empty; the starred plot has two corners
+    ///    |[ ]|
+    fn count_corners_touch_2(&self, coord: &Coord2D<usize>) -> usize {
         let touches_north = match coord.north() {
             Some(c) => self.coords.contains(&c),
             None => false,
@@ -95,39 +126,56 @@ impl Region {
 
         let is_straight = (touches_east && touches_west) || (touches_north && touches_south);
         if is_straight {
+            // case A in the docstring
             return 0;
         }
 
+        let ne_full = match coord.north_east() {
+            Some(c) => self.coords.contains(&c),
+            None => false,
+        };
+        let se_full = self.coords.contains(&coord.south_east());
+        let sw_full = match coord.south_west() {
+            Some(c) => self.coords.contains(&c),
+            None => false,
+        };
+        let nw_full = match coord.north_west() {
+            Some(c) => self.coords.contains(&c),
+            None => false,
+        };
+
         let corner_filled = {
             if touches_east && touches_south {
-                self.coords.contains(&coord.south_east())
+                se_full
             } else if touches_south && touches_west {
-                match coord.south_west() {
-                    Some(c) => self.coords.contains(&c),
-                    None => false,
-                }
+                sw_full
             } else if touches_west && touches_north {
-                match coord.north_west() {
-                    Some(c) => self.coords.contains(&c),
-                    None => false,
-                }
+                nw_full
             } else if touches_north && touches_east {
-                match coord.north_east() {
-                    Some(c) => self.coords.contains(&c),
-                    None => false,
-                }
+                ne_full
             } else {
-                panic!()
+                panic!("This isn't realy an el-shaped corner 😬");
             }
         };
         if corner_filled {
+            // case B in the docstring
             1
         } else {
+            // case C in the docstring
             2
         }
     }
 
-    fn touch_3_corners(&self, coord: &Coord2D<usize>) -> usize {
+    /// Garden plots that are touching 3 neighbors can be put in 3 categories (up to rotation):
+    ///
+    /// [ ] [*] [ ]  <-- The three classes are defined by whether the coordinates
+    /// ---+   +---      indicated by the question marks are filled (0, 1, or both)
+    ///  ? |[ ]| ?       0 => 2 corners, 1 => 1 corner, both => zero corners (this is an edge)
+    ///    +---+
+    ///                  Note that we're kind of neglecting what is on the north side of the
+    ///                  starred plot. We've taken care (sort of, we just got lucky) to make
+    ///                  sure the other cases are counted by other rules
+    fn count_corners_touch_3(&self, coord: &Coord2D<usize>) -> usize {
         let touches_north = match coord.north() {
             Some(c) => self.coords.contains(&c),
             None => false,
@@ -173,7 +221,9 @@ impl Region {
         }
     }
 
-    fn touch_4_corners(&self, coord: &Coord2D<usize>) -> usize {
+    /// If a plot touches 4 neighbors, the number of corners it creates
+    /// is equal to the number of diagonal coordinates that are unoccupied.
+    fn count_corners_touch_4(&self, coord: &Coord2D<usize>) -> usize {
         let ne_full = match coord.north_east() {
             Some(c) => self.coords.contains(&c),
             None => false,
@@ -224,7 +274,8 @@ impl Region {
     }
 
     fn cost_part_2(&self) -> usize {
-        self.area() * self.n_sides()
+        // the number of sides is equal to the number of corners
+        self.area() * self.n_corners()
     }
 }
 
