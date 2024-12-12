@@ -180,6 +180,15 @@ impl<T: Copy + Display + PartialEq> Grid<T> {
 }
 
 impl Grid<char> {
+    pub fn from_line_iter(input: impl Iterator<Item = String>) -> Self {
+        let result: Vec<Vec<char>> = input
+            .into_iter()
+            .map(|row| row.chars().collect::<Vec<char>>())
+            .collect();
+
+        Self::new(result)
+    }
+
     pub fn into_numeric_type<S: Copy + Display + PartialEq + TryFrom<u32>>(self) -> Grid<S>
     where
         <S as TryFrom<u32>>::Error: std::fmt::Debug,
@@ -202,22 +211,13 @@ impl Grid<char> {
     }
 }
 
-pub fn char_grid_from_line(input: impl Iterator<Item = String>) -> Grid<char> {
-    let result: Vec<Vec<char>> = input
-        .into_iter()
-        .map(|row| row.chars().collect::<Vec<char>>())
-        .collect();
-
-    Grid::new(result)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_find() {
-        let grid = char_grid_from_line(["abc", "abc", "abc"].into_iter().map(|x| x.to_string()));
+        let grid = Grid::from_line_iter(["abc", "abc", "abc"].into_iter().map(|x| x.to_string()));
         assert_eq!(
             grid.find('a'),
             HashSet::from_iter([Coord2D::new(0, 0), Coord2D::new(1, 0), Coord2D::new(2, 0)])
@@ -226,7 +226,7 @@ mod tests {
 
     #[test]
     fn test_rows_etc() {
-        let grid = char_grid_from_line(["abc", "def", "ghi"].into_iter().map(|x| x.to_string()));
+        let grid = Grid::from_line_iter(["abc", "def", "ghi"].into_iter().map(|x| x.to_string()));
 
         assert_eq!(
             grid.rows()

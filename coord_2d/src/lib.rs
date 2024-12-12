@@ -101,17 +101,45 @@ impl<T: Integer + Unsigned + PartialOrd + Eq + Copy + Hash> Coord2D<T> {
         }
     }
 
+    pub fn north_east(&self) -> Option<Self> {
+        if self.row > T::zero() {
+            Some(Self::new(self.row - T::one(), self.col + T::one()))
+        } else {
+            None
+        }
+    }
+
     pub fn east(&self) -> Self {
         Self::new(self.row, self.col + T::one())
+    }
+
+    pub fn south_east(&self) -> Self {
+        Self::new(self.row + T::one(), self.col + T::one())
     }
 
     pub fn south(&self) -> Self {
         Self::new(self.row + T::one(), self.col)
     }
 
+    pub fn south_west(&self) -> Option<Self> {
+        if self.col > T::zero() {
+            Some(Self::new(self.row + T::one(), self.col - T::one()))
+        } else {
+            None
+        }
+    }
+
     pub fn west(&self) -> Option<Self> {
         if self.col > T::zero() {
             Some(Self::new(self.row, self.col - T::one()))
+        } else {
+            None
+        }
+    }
+
+    pub fn north_west(&self) -> Option<Self> {
+        if self.row > T::zero() && self.col > T::zero() {
+            Some(Self::new(self.row - T::one(), self.col - T::one()))
         } else {
             None
         }

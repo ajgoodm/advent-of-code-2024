@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use coord_2d::Coord2D;
-use grid::{char_grid_from_line, Grid};
+use grid::Grid;
 use utils::AocBufReader;
 
 fn main() {
@@ -10,12 +10,12 @@ fn main() {
 }
 
 fn part_1(input: AocBufReader) {
-    let grid: Grid<isize> = char_grid_from_line(input).into_numeric_type::<isize>();
+    let grid: Grid<isize> = Grid::from_line_iter(input).into_numeric_type::<isize>();
     println!("part 1: {}", part_1_inner(grid));
 }
 
 fn part_2(input: AocBufReader) {
-    let grid: Grid<isize> = char_grid_from_line(input).into_numeric_type::<isize>();
+    let grid: Grid<isize> = Grid::from_line_iter(input).into_numeric_type::<isize>();
     println!("part 1: {}", part_2_inner(grid));
 }
 
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn test_part_1() {
-        let grid: Grid<isize> = char_grid_from_line(
+        let grid: Grid<isize> = Grid::from_line_iter(
             [
                 "89010123", "78121874", "87430965", "96549874", "45678903", "32019012", "01329801",
                 "10456732",
@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn test_part_2() {
-        let grid: Grid<isize> = char_grid_from_line(
+        let grid: Grid<isize> = Grid::from_line_iter(
             [
                 "89010123", "78121874", "87430965", "96549874", "45678903", "32019012", "01329801",
                 "10456732",
