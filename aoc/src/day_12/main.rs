@@ -47,9 +47,10 @@ impl Region {
         Self { plant_type, coords }
     }
 
-    /// The number of sides is equal to the number of times line dividing
-    /// the region from the external area changes directions. This function counts
-    /// the number of corners in this imaginary line bounding the region.
+    /// The number of sides is equal to the number of times the line dividing
+    /// the region from the external area changes directions (the number of corners).
+    ///
+    /// This function counts the number of corners in this imaginary line bounding the region.
     /// It does this by counting the number of corners touched by each garden plot.
     /// The trick is to not overcount corners...
     /// This turns out to be very annoying
@@ -58,7 +59,7 @@ impl Region {
     ///
     /// [ ] [ ]|
     ///        +---+ <--
-    /// [ ] [^] [*]|      we say this garden plot has two corners (allocating the corners)
+    /// [ ] [^] [*]|      we say this garden plot has two corners
     ///        +---+ <--  (in our counting scheme, the other two corners (+) belong to the block
     /// [ ] [ ]|          labelled ^, which is touching 4 neighbors
     ///
@@ -349,20 +350,15 @@ mod tests {
         assert_eq!(part_1_inner(grid), 772)
     }
 
-    // #[test]
-    // fn test_part_2() {
-    //     let grid = Grid::from_line_iter([
-    //         "EEEEE",
-    //         "EXXXX",
-    //         "EEEEE",
-    //         "EXXXX",
-    //         "EEEEE",
-    //     ].into_iter().map(|x| x.to_string()));
-    //     assert_eq!(
-    //         part_2_inner(grid),
-    //         236
-    //     )
-    // }
+    #[test]
+    fn test_part_2() {
+        let grid = Grid::from_line_iter(
+            ["EEEEE", "EXXXX", "EEEEE", "EXXXX", "EEEEE"]
+                .into_iter()
+                .map(|x| x.to_string()),
+        );
+        assert_eq!(part_2_inner(grid), 236)
+    }
 
     #[test]
     fn test_part_2_second() {
