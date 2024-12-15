@@ -193,7 +193,6 @@ mod tests {
         )
         .collect::<Vec<_>>();
         let map = Map::new(11, 7, robots);
-        map.print();
         assert_eq!(part_1_inner(map), 12);
     }
 }
