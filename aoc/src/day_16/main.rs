@@ -3,10 +3,11 @@ use std::collections::HashSet;
 use coord_2d::Coord2D;
 use direction::CardinalDirection;
 use grid::Grid;
-use utils::{shortest_path, AocBufReader, DijkstraSearchable};
+use utils::{shortest_path_length, shortest_paths, AocBufReader, DijkstraSearchable};
 
 fn main() {
     part_1(AocBufReader::from_string("aoc/src/day_16/data/part_1.txt"));
+    part_2(AocBufReader::from_string("aoc/src/day_16/data/part_1.txt"));
 }
 
 fn part_1(input: AocBufReader) {
@@ -15,6 +16,15 @@ fn part_1(input: AocBufReader) {
     println!(
         "part 1: {}",
         part_1_inner(map, (start, CardinalDirection::East), end)
+    );
+}
+
+fn part_2(input: AocBufReader) {
+    let (map, start, end) = parse_input(input);
+
+    println!(
+        "part 2: {}",
+        part_2_inner(map, (start, CardinalDirection::East), end)
     );
 }
 
@@ -30,7 +40,31 @@ fn part_1_inner(
         (end_coord.clone(), CardinalDirection::West),
     ]);
 
-    shortest_path::<(Coord2D<usize>, CardinalDirection), usize, Map>(map, start, ends).unwrap()
+    shortest_path_length::<(Coord2D<usize>, CardinalDirection), usize, Map>(map, start, ends)
+        .unwrap()
+}
+
+fn part_2_inner(
+    map: Map,
+    start: (Coord2D<usize>, CardinalDirection),
+    end_coord: Coord2D<usize>,
+) -> usize {
+    let ends: HashSet<(Coord2D<usize>, CardinalDirection)> = HashSet::from([
+        (end_coord.clone(), CardinalDirection::North),
+        (end_coord.clone(), CardinalDirection::East),
+        (end_coord.clone(), CardinalDirection::South),
+        (end_coord.clone(), CardinalDirection::West),
+    ]);
+
+    let (_, paths) =
+        shortest_paths::<(Coord2D<usize>, CardinalDirection), usize, Map>(map, start, ends)
+            .unwrap();
+    paths
+        .into_iter()
+        .flatten()
+        .map(|(coord, _)| coord)
+        .collect::<HashSet<Coord2D<usize>>>()
+        .len()
 }
 
 struct Map {
