@@ -2,6 +2,7 @@ use utils::AocBufReader;
 
 fn main() {
     part_1(AocBufReader::from_string("aoc/src/day_17/data/part_1.txt"));
+    part_2(AocBufReader::from_string("aoc/src/day_17/data/part_1.txt"));
 }
 
 fn part_1(input: AocBufReader) {
@@ -11,6 +12,15 @@ fn part_1(input: AocBufReader) {
 
 fn part_1_inner(mut computer: Computer, program: Program) -> String {
     computer.execute_program(program)
+}
+
+fn part_2(input: AocBufReader) {
+    let (_, program) = parse_input(input);
+    println!("part 2: {}", part_2_inner(program));
+}
+
+fn part_2_inner(_: Program) -> usize {
+    0
 }
 
 enum Instruction {
@@ -42,9 +52,9 @@ impl Instruction {
 
 #[derive(Debug)]
 struct Computer {
-    register_a: usize,
-    register_b: usize,
-    register_c: usize,
+    register_a: u64,
+    register_b: u64,
+    register_c: u64,
 }
 
 impl Computer {
@@ -72,50 +82,46 @@ impl Computer {
 
         let instruction = Instruction::from_opcode(opcode.unwrap());
         let combo_operand = self.get_combo_operand(operand_code.unwrap());
-        let literal_operand = operand_code.unwrap() as usize;
+        let literal_operand = operand_code.unwrap() as u64;
 
         match instruction {
             Instruction::Adv => {
-                self.register_a /= 2usize.pow(combo_operand.unwrap() as u32);
+                self.register_a >>= combo_operand.unwrap();
             }
             Instruction::Bxl => {
                 self.register_b ^= literal_operand;
             }
             Instruction::Bst => {
-                self.register_b = combo_operand.unwrap() % 8;
+                self.register_b = 7 & combo_operand.unwrap(); // last 3 bits
             }
             Instruction::Jnz => {
                 if self.register_a == 0 {
                     // don't do anything
                 } else {
-                    program.instruction_pointer = literal_operand;
+                    program.instruction_pointer = literal_operand as usize;
                 }
             }
             Instruction::Bxc => {
                 self.register_b ^= self.register_c;
             }
-            Instruction::Out => return Some((combo_operand.unwrap() % 8).to_string()),
-            Instruction::Bdv => {
-                self.register_b = self.register_a / (2usize.pow(combo_operand.unwrap() as u32))
-            }
-            Instruction::Cdv => {
-                self.register_c = self.register_a / (2usize.pow(combo_operand.unwrap() as u32))
-            }
+            Instruction::Out => return Some((7 & combo_operand.unwrap()).to_string()),
+            Instruction::Bdv => self.register_b = self.register_a >> combo_operand.unwrap(),
+            Instruction::Cdv => self.register_c = self.register_a >> combo_operand.unwrap(),
         }
 
         Some("".to_string())
     }
 
-    fn get_combo_operand(&self, operand_code: u8) -> Option<usize> {
+    fn get_combo_operand(&self, operand_code: u8) -> Option<u64> {
         if operand_code == 7 {
             return None;
         }
 
         let result = match operand_code {
-            0 => 0usize,
-            1 => 1usize,
-            2 => 2usize,
-            3 => 3usize,
+            0 => 0u64,
+            1 => 1u64,
+            2 => 2u64,
+            3 => 3u64,
             4 => self.register_a,
             5 => self.register_b,
             6 => self.register_c,
@@ -125,7 +131,7 @@ impl Computer {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Program {
     data: Vec<u8>,
     len: usize,
@@ -145,7 +151,7 @@ impl Program {
 }
 
 fn parse_input(mut input: impl Iterator<Item = String>) -> (Computer, Program) {
-    let register_a: usize = input
+    let register_a: u64 = input
         .next()
         .unwrap()
         .split_whitespace()
@@ -153,7 +159,7 @@ fn parse_input(mut input: impl Iterator<Item = String>) -> (Computer, Program) {
         .unwrap()
         .parse()
         .unwrap();
-    let register_b: usize = input
+    let register_b: u64 = input
         .next()
         .unwrap()
         .split_whitespace()
@@ -161,7 +167,7 @@ fn parse_input(mut input: impl Iterator<Item = String>) -> (Computer, Program) {
         .unwrap()
         .parse()
         .unwrap();
-    let register_c: usize = input
+    let register_c: u64 = input
         .next()
         .unwrap()
         .split_whitespace()
@@ -216,5 +222,21 @@ mod tests {
             part_1_inner(computer, program),
             "4,6,3,5,6,3,5,2,1,0".to_string()
         );
+    }
+
+    #[test]
+    fn test_part_2() {
+        let (_, program) = parse_input(
+            [
+                "Register A: 729",
+                "Register B: 0",
+                "Register C: 0",
+                "",
+                "Program: 0,1,5,4,3,0",
+            ]
+            .into_iter()
+            .map(|x| x.to_string()),
+        );
+        assert_eq!(part_2_inner(program), 117440)
     }
 }
