@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use utils::AocBufReader;
 
 fn main() {
@@ -11,7 +13,12 @@ fn part_1(input: AocBufReader) {
 }
 
 fn part_1_inner(mut computer: Computer, program: Program) -> String {
-    computer.execute_program(program)
+    let digits = computer.execute_program(program);
+    digits
+        .into_iter()
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>()
+        .join(",")
 }
 
 fn part_2(input: AocBufReader) {
@@ -19,10 +26,59 @@ fn part_2(input: AocBufReader) {
     println!("part 2: {}", part_2_inner(program));
 }
 
-fn part_2_inner(_: Program) -> usize {
-    0
+/// The goal of this part is to find a starting value for Register A
+/// such that the program outputs itself; this is a quine
+///  - https://en.wikipedia.org/wiki/Quine_(computing)
+///
+/// To help, let's examine our specific program:
+///     2,4,1,2,7,5,4,7,1,3,5,5,0,3,3,0
+///
+/// This has a few steps:
+///   1) 2(4) - (Bst, 4) - place last 3 bits from A into B
+///   2) 1(2) - (Bxl, 2) - XOR the value in B with (...010)
+///   3) 7(5) - (Cdv, 5) - interpret register B as a number, n;
+///                        replace register C with all but the
+///                        last n bits of register A
+///   4) 4(7) - (Bxc, _) - XOR B with C
+///   5) 1(3) - (Bxl, 3) - XOR B with (...011)
+///   6) 5(5) - (Out, 5) - Output the last 3 bits of register B
+///   7) 0(3) - (Adv, 3) - Shift A by 3 bits, removing the 3 least
+///                        significant bits.
+///   8) 3(0) - (Jnz, 0) - If A is not zero, return to the start
+///                        of the program; if A is zero, halt
+///
+/// From the structure of this program, we know that the length
+/// of the intial value of A (in bits) is equal to the length of
+/// the program's output (the length of our program * 3 = 48 bits).
+/// There are too many possible values (281,474,976,710,656) to
+/// brute force, so we need to do something smarter
+fn part_2_inner(program: Program) -> u64 {
+    let program_data = program.data.clone();
+    let mut stems: Vec<u64> = vec![0];
+
+    for idx in (0..program_data.len()).rev() {
+        let to_match = program_data[idx..]
+            .iter()
+            .map(|x| *x as u64)
+            .collect::<Vec<u64>>();
+
+        let mut new_stems: Vec<u64> = Vec::new();
+        for (octal_digit, old_stem) in (0..8u64).cartesian_product(stems) {
+            let octal_number: u64 = octal_digit + (8 * old_stem);
+            let mut computer = Computer::with_register_a(octal_number);
+            let output = computer.execute_program(program.clone());
+
+            if output == to_match {
+                new_stems.push(octal_number);
+            }
+        }
+        stems = new_stems;
+    }
+
+    stems.into_iter().min().unwrap()
 }
 
+#[derive(Debug)]
 enum Instruction {
     Adv,
     Bxl,
@@ -58,15 +114,30 @@ struct Computer {
 }
 
 impl Computer {
-    fn execute_program(&mut self, mut program: Program) -> String {
-        let mut output: Vec<String> = Vec::new();
+    fn with_register_a(register_a: u64) -> Self {
+        Self {
+            register_a,
+            register_b: 0,
+            register_c: 0,
+        }
+    }
+
+    fn execute_program(&mut self, mut program: Program) -> Vec<u64> {
+        let mut output: Vec<u64> = Vec::new();
         while let Some(out) = self.execute_instruction(&mut program) {
-            if !out.is_empty() {
-                output.push(out);
+            match out.len() {
+                0 => (),
+                1 => {
+                    let char = out.chars().next().unwrap();
+                    output.push(char.to_digit(10u32).unwrap() as u64)
+                }
+                _ => {
+                    panic!("program output invalid octal digit {}", out);
+                }
             }
         }
 
-        output.join(",")
+        output
     }
 
     /// Execute the instruction and return the output; if the output is empty,
@@ -104,7 +175,9 @@ impl Computer {
             Instruction::Bxc => {
                 self.register_b ^= self.register_c;
             }
-            Instruction::Out => return Some((7 & combo_operand.unwrap()).to_string()),
+            Instruction::Out => {
+                return Some((7 & combo_operand.unwrap()).to_string());
+            }
             Instruction::Bdv => self.register_b = self.register_a >> combo_operand.unwrap(),
             Instruction::Cdv => self.register_c = self.register_a >> combo_operand.unwrap(),
         }
