@@ -2,6 +2,7 @@ use std::cmp::{Eq, PartialOrd};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::ops;
+use std::str::FromStr;
 
 use num::traits::Unsigned;
 use num::{Integer, Signed};
@@ -152,6 +153,21 @@ impl<T: Integer + Unsigned + PartialOrd + Eq + Copy + Hash> Coord2D<T> {
             CardinalDirection::South => Some(self.south()),
             CardinalDirection::West => self.west(),
         }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParseCoord2DUsizeError;
+
+impl FromStr for Coord2D<usize> {
+    type Err = ParseCoord2DUsizeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut iter = s.split(",");
+        Ok(Coord2D::new(
+            iter.next().unwrap().parse().unwrap(),
+            iter.next().unwrap().parse().unwrap(),
+        ))
     }
 }
 
