@@ -11,13 +11,16 @@ fn main() {
 }
 
 fn part_1(input: AocBufReader) {
-    let map = parse_input_part_1(input, 1024, 71, 71);
+    let mut bytes = parse_bytes(input);
+    bytes.truncate(1024);
+    let bytes: HashSet<Coord2D<usize>> = bytes.into_iter().collect();
+    let map = Map::new(bytes, 71, 71);
     println!("part 1: {}", part_1_inner(map));
 }
 
-fn part_1_inner(map: MapPart1) -> usize {
+fn part_1_inner(map: Map) -> usize {
     let end = Coord2D::new(map.n_rows - 1, map.n_cols - 1);
-    shortest_path_length::<Coord2D<usize>, usize, MapPart1>(
+    shortest_path_length::<Coord2D<usize>, usize, Map>(
         map,
         Coord2D::new(0, 0),
         HashSet::from([end]),
@@ -32,53 +35,46 @@ fn part_2(input: AocBufReader) {
 
 fn part_2_inner(bytes: Vec<Coord2D<usize>>, n_rows: usize, n_cols: usize) -> Coord2D<usize> {
     let end = Coord2D::new(n_rows - 1, n_cols - 1);
-    let candidate_byte_indices = (1024..bytes.len()).collect::<Vec<_>>();
-    let blocking_byte_idx = candidate_byte_indices
+    let candidate_byte_counts = (1024..bytes.len()).rev().collect::<Vec<_>>();
+    let first_blocked_idx = candidate_byte_counts
         .par_iter()
         .find_first(|&nth_byte_idx| {
             let mut n_bytes = bytes.clone();
             n_bytes.truncate(*nth_byte_idx);
             let n_bytes: HashSet<Coord2D<usize>> = n_bytes.into_iter().collect();
-            let map = MapPart1::new(n_bytes, n_rows, n_cols);
-            let shortest_path = shortest_path_length::<Coord2D<usize>, usize, MapPart1>(
+            let map = Map::new(n_bytes, n_rows, n_cols);
+            let shortest_path = shortest_path_length::<Coord2D<usize>, usize, Map>(
                 map,
                 Coord2D::new(0, 0),
                 HashSet::from([end.clone()]),
             );
 
-            shortest_path.is_none()
+            shortest_path.is_some()
         })
         .unwrap();
 
-    bytes[*blocking_byte_idx - 1].clone()
+    bytes[*first_blocked_idx].clone()
 }
 
 fn parse_bytes(input: AocBufReader) -> Vec<Coord2D<usize>> {
     parse_iter::<Coord2D<usize>, String>(input)
-        .map(|x| Coord2D::new(x.col, x.row))
+        .map(|x| {
+            // the coordinates are stored "X,Y"
+            // for visualization / debugging it's
+            // helpful to keep the rox / col labels
+            // consistent
+            Coord2D::new(x.col, x.row)
+        })
         .collect()
 }
 
-fn parse_input_part_1(
-    input: AocBufReader,
-    n_bytes: usize,
-    n_rows: usize,
-    n_cols: usize,
-) -> MapPart1 {
-    let mut bytes = parse_bytes(input);
-    bytes.truncate(n_bytes);
-    let bytes: HashSet<Coord2D<usize>> = bytes.into_iter().collect();
-
-    MapPart1::new(bytes, n_rows, n_cols)
-}
-
-struct MapPart1 {
+struct Map {
     bytes: HashSet<Coord2D<usize>>,
     n_rows: usize,
     n_cols: usize,
 }
 
-impl MapPart1 {
+impl Map {
     fn new(bytes: HashSet<Coord2D<usize>>, n_rows: usize, n_cols: usize) -> Self {
         Self {
             bytes,
@@ -103,7 +99,7 @@ impl MapPart1 {
     }
 }
 
-impl DijkstraSearchable for MapPart1 {
+impl DijkstraSearchable for Map {
     type Node = Coord2D<usize>;
     type Cost = usize;
 
