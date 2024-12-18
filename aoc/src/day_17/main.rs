@@ -52,6 +52,20 @@ fn part_2(input: AocBufReader) {
 /// the program's output (the length of our program * 3 = 48 bits).
 /// There are too many possible values (281,474,976,710,656) to
 /// brute force, so we need to do something smarter
+///
+/// Notice that the structure of the program is relatively straightforward
+/// Consider the last loop through our program data: we know that register
+/// A has exactly 3 bits in it as this point (after this loop it will be
+/// empty and the program will halt). During this loop, we place these 3
+/// bits in B, place some or all of these 3 bits in C, and then do some
+/// XORing. Notably, the outcome (the last digit output by our program)
+/// is determined entirely by the 3-bit (octal) number in A!
+///
+/// We can find all octal numbers that generate the last value of our
+/// program (0). There is only 1! We can go backwards one octal digit
+/// at a time (appending a new least significant octal digit), run
+/// the new candidates through our computer and filter to those that
+/// generate the _next_ digit and so on.
 fn part_2_inner(program: Program) -> u64 {
     let program_data = program.data.clone();
     let mut stems: Vec<u64> = vec![0];
