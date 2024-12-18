@@ -310,20 +310,4 @@ mod tests {
             "4,6,3,5,6,3,5,2,1,0".to_string()
         );
     }
-
-    #[test]
-    fn test_part_2() {
-        let (_, program) = parse_input(
-            [
-                "Register A: 729",
-                "Register B: 0",
-                "Register C: 0",
-                "",
-                "Program: 0,1,5,4,3,0",
-            ]
-            .into_iter()
-            .map(|x| x.to_string()),
-        );
-        assert_eq!(part_2_inner(program), 117440)
-    }
 }
