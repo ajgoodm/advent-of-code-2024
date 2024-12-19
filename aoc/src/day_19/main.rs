@@ -1,9 +1,12 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
-use utils::{shortest_path_length, AocBufReader, DijkstraSearchable};
+use rayon::prelude::*;
+
+use utils::AocBufReader;
 
 fn main() {
     part_1(AocBufReader::from_string("aoc/src/day_19/data/part_1.txt"));
+    part_2(AocBufReader::from_string("aoc/src/day_19/data/part_1.txt"));
 }
 
 fn part_1(input: AocBufReader) {
@@ -13,41 +16,53 @@ fn part_1(input: AocBufReader) {
 
 fn part_1_inner(towels: Vec<String>, designs: Vec<String>) -> usize {
     designs
-        .into_iter()
+        .par_iter()
         .filter(|d| {
-            let design_builder = DesignBuilder::new(d.clone(), &towels);
-            shortest_path_length(design_builder, "".to_string(), HashSet::from([d.clone()]))
-                .is_some()
+            let mut cache = HashMap::new();
+            let_me_count_the_ways(d, &towels, &mut cache) != 0
         })
         .count()
 }
 
-struct DesignBuilder<'d> {
-    design: String,
-    towels: &'d Vec<String>,
+fn part_2(input: AocBufReader) {
+    let (towels, designs) = parse_input(input);
+    println!("part 2: {}", part_2_inner(towels, designs));
 }
 
-impl<'d> DesignBuilder<'d> {
-    fn new(design: String, towels: &'d Vec<String>) -> Self {
-        DesignBuilder { design, towels }
-    }
+fn part_2_inner(towels: Vec<String>, designs: Vec<String>) -> usize {
+    designs
+        .par_iter()
+        .map(|d| {
+            let mut cache = HashMap::new();
+            let_me_count_the_ways(d, &towels, &mut cache)
+        })
+        .sum()
 }
 
-impl<'d> DijkstraSearchable for DesignBuilder<'d> {
-    type Node = String;
-    type Cost = usize;
-
-    fn neighbors(&self, previous: &String, previous_cost: usize) -> Vec<(String, usize)> {
-        self.towels
-            .iter()
-            .map(|next_towel| {
-                let mut next = previous.clone();
-                next.push_str(next_towel);
-                (next, previous_cost + 1)
-            })
-            .filter(|(next, _)| next.len() <= self.design.len() && self.design.starts_with(next))
-            .collect()
+fn let_me_count_the_ways<'a>(
+    design: &'a str,
+    towels: &Vec<String>,
+    cache: &mut HashMap<&'a str, usize>,
+) -> usize {
+    if let Some(cached) = cache.get(design) {
+        return *cached;
     }
+
+    let result: usize = towels
+        .iter()
+        .map(|towel| {
+            if design == towel {
+                1
+            } else if design.ends_with(towel) {
+                let remainder: usize = design.len() - towel.len();
+                let_me_count_the_ways(&design[..remainder], towels, cache)
+            } else {
+                0
+            }
+        })
+        .sum();
+    cache.insert(design, result);
+    result
 }
 
 fn parse_input(mut input: AocBufReader) -> (Vec<String>, Vec<String>) {
