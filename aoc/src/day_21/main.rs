@@ -13,7 +13,7 @@ fn part_1(input: AocBufReader) {
 fn part_1_inner(input: impl Iterator<Item = String>) -> usize {
     let mut result: usize = 0;
     for line in input {
-        let shortest_sequence = shortest_sequence(&line[..]);
+        let shortest_sequence = shortest_sequence(&line[..], 2);
         let val = line[..(line.len() - 1)].parse::<usize>().unwrap();
         println!("shortest sequence: {}, val: {}", shortest_sequence, val);
         result += shortest_sequence * val
@@ -22,25 +22,23 @@ fn part_1_inner(input: impl Iterator<Item = String>) -> usize {
     result
 }
 
-fn shortest_sequence(sequence: &str) -> usize {
+fn shortest_sequence(sequence: &str, n_operators: usize) -> usize {
     let numeric_key_presses: Vec<_> = sequence
         .chars()
         .map(NumericKeypadPosition::from_char)
         .collect();
-    let start = State::new(
-        DirectionalKeypadPosition::A,
-        DirectionalKeypadPosition::A,
-        NumericKeypadPosition::A,
-    );
+
+    let operators: Vec<_> = (0..n_operators)
+        .map(|_| DirectionalKeypadPosition::A)
+        .collect();
+    let start = State::new(operators.clone(), NumericKeypadPosition::A);
 
     let mut check_points: Vec<State> = vec![start];
-    check_points.extend(numeric_key_presses.into_iter().map(|x| {
-        State::new(
-            DirectionalKeypadPosition::A,
-            DirectionalKeypadPosition::A,
-            x,
-        )
-    }));
+    check_points.extend(
+        numeric_key_presses
+            .into_iter()
+            .map(|x| State::new(operators.clone(), x)),
+    );
 
     let mut n_pushes: usize = 0;
     for idx in 0..(check_points.len() - 1) {
@@ -64,70 +62,49 @@ impl Me {
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 struct State {
-    outer_directional_operator: DirectionalKeypadPosition,
-    inner_directional_operator: DirectionalKeypadPosition,
+    directional_pad_operators: Vec<DirectionalKeypadPosition>,
     numeric_pad_operator: NumericKeypadPosition,
 }
 
 impl State {
     fn new(
-        outer_directional_operator: DirectionalKeypadPosition,
-        inner_directional_operator: DirectionalKeypadPosition,
+        directional_pad_operators: Vec<DirectionalKeypadPosition>,
         numeric_pad_operator: NumericKeypadPosition,
     ) -> Self {
         Self {
-            outer_directional_operator,
-            inner_directional_operator,
+            directional_pad_operators,
             numeric_pad_operator,
         }
     }
 
     #[allow(clippy::needless_return)]
     fn execute(&self, direction_keypad_input: DirectionalKeypadPosition) -> Option<State> {
-        let input_for_inner_operator: DirectionalKeypadPosition;
-        let input_for_num_pad_operator: DirectionalKeypadPosition;
+        let mut input_for_next: DirectionalKeypadPosition = direction_keypad_input;
 
-        if direction_keypad_input == DirectionalKeypadPosition::A {
-            input_for_inner_operator = self.outer_directional_operator.clone();
-        } else {
-            match self
-                .outer_directional_operator
-                .neighbors()
-                .iter()
-                .find(|(_, input)| &direction_keypad_input == input)
-            {
-                Some((next, _)) => {
-                    return Some(State::new(
-                        next.clone(),
-                        self.inner_directional_operator.clone(),
-                        self.numeric_pad_operator.clone(),
-                    ))
+        for (ii, intermediate_operator) in self.directional_pad_operators.iter().enumerate() {
+            if input_for_next == DirectionalKeypadPosition::A {
+                input_for_next = intermediate_operator.clone();
+            } else {
+                match intermediate_operator
+                    .neighbors()
+                    .iter()
+                    .find(|(_, input)| &input_for_next == input)
+                {
+                    Some((next, _)) => {
+                        let operators = self
+                            .directional_pad_operators
+                            .iter()
+                            .enumerate()
+                            .map(|(jj, op)| if ii == jj { next.clone() } else { op.clone() })
+                            .collect::<Vec<_>>();
+                        return Some(State::new(operators, self.numeric_pad_operator.clone()));
+                    }
+                    None => return None,
                 }
-                None => return None,
             }
         }
 
-        if input_for_inner_operator == DirectionalKeypadPosition::A {
-            input_for_num_pad_operator = self.inner_directional_operator.clone();
-        } else {
-            match self
-                .inner_directional_operator
-                .neighbors()
-                .iter()
-                .find(|(_, input)| &input_for_inner_operator == input)
-            {
-                Some((next, _)) => {
-                    return Some(State::new(
-                        self.outer_directional_operator.clone(),
-                        next.clone(),
-                        self.numeric_pad_operator.clone(),
-                    ))
-                }
-                None => return None,
-            }
-        }
-
-        if input_for_num_pad_operator == DirectionalKeypadPosition::A {
+        if input_for_next == DirectionalKeypadPosition::A {
             // this doesn't do anything (we maybe pushed the wrong button)
             // this won't ever happen on the optimal route
             return Some(self.clone());
@@ -136,12 +113,11 @@ impl State {
                 .numeric_pad_operator
                 .neighbors()
                 .iter()
-                .find(|(_, input)| &input_for_num_pad_operator == input)
+                .find(|(_, input)| &input_for_next == input)
             {
                 Some((next, _)) => {
                     return Some(State::new(
-                        self.outer_directional_operator.clone(),
-                        self.inner_directional_operator.clone(),
+                        self.directional_pad_operators.clone(),
                         next.clone(),
                     ))
                 }
