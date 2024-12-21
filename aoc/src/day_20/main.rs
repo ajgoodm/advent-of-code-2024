@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
+use rayon::prelude::*;
 
 use coord_2d::Coord2D;
 use grid::Grid;
@@ -27,24 +28,30 @@ type Cache = HashMap<SourceDest, Option<usize>>;
 /// We will find every plausible cheat (every pair of open coordinates on the map
 /// that are separated by a manhattan distance <= cheat_len). Then we will evaluate
 /// the total cost of a path utilizing this cheat by finding the minimum path length
-/// to from S to the cheat start and the minimum path length from the cheat end to E.
+/// from S to the cheat start and the minimum path length from the cheat end to E.
 ///
-/// Speed this up a little bit by pre-computing the minimum path length from the start
-/// to every other point and from every other point to the end. Then the actual evaluation
+/// Speed this up a little bit by pre-computing the minimum path length from S
+/// to every other point and from every other point to E. Then the actual evaluation
 /// of the paths with cheats is fast because every distance is precomputed.
 ///
 /// To speed up the precompute step, memoize intermediate path lengths
 fn inner(map: Map, cheat_len: usize) -> usize {
     let open_coords: Vec<_> = map.grid.find('.').into_iter().collect();
 
-    // build a list of start, end pairs from S to every other coordinate
-    // and from every coordinate to the end
+    // build a list of (S, cheat_start) pairs from S to every other coordinate
     let mut src_dest_pairs: Vec<_> = open_coords
         .iter()
         .map(|e| (map.start.clone(), e.clone()))
         .collect();
-    // extend to list with pairs that start and every coordinate and end at E
+    // extend to list with pairs (cheat_end, E) from every cheat end to E
     src_dest_pairs.extend(open_coords.iter().map(|s| (s.clone(), map.end.clone())));
+
+    // sort these by the distance separating them so that longer paths that include shorter
+    // paths within them can benefit from caching
+    src_dest_pairs.sort_by_key(|(start, end)| {
+        (start.row as isize - end.row as isize).abs()
+            + (start.col as isize - end.col as isize).abs()
+    });
 
     // build up a cache precomputing each of the distances described above.
     let mut cache: Cache = HashMap::new();
@@ -60,7 +67,7 @@ fn inner(map: Map, cheat_len: usize) -> usize {
         .unwrap();
     let cheat_start_ends = map.cheats(cheat_len);
     cheat_start_ends
-        .into_iter()
+        .par_iter()
         .filter(|(cheat_start, cheat_end)| {
             if let (Some(Some(start_to_cheat)), Some(Some(cheat_to_end))) = (
                 cache.get(&(map.start.clone(), cheat_start.clone())),
