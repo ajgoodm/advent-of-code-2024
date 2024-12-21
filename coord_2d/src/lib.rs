@@ -27,6 +27,26 @@ impl<T: Integer + PartialOrd + Eq + Copy + Hash> Coord2D<T> {
     pub fn is_nonnegative(&self) -> bool {
         self.row >= T::zero() && self.col >= T::zero()
     }
+
+    pub fn manhattan_distance(&self, other: &Self) -> T {
+        let n_streets = {
+            if self.row > other.row {
+                self.row - other.row
+            } else {
+                other.row - self.row
+            }
+        };
+
+        let n_avenues = {
+            if self.col > other.col {
+                self.col - other.col
+            } else {
+                other.col - self.col
+            }
+        };
+
+        n_streets + n_avenues
+    }
 }
 
 impl<T: Integer + PartialOrd + Eq + Copy + Hash> ops::Add<Coord2D<T>> for Coord2D<T> {
