@@ -1,9 +1,12 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use utils::{shortest_path_length, AocBufReader, DijkstraSearchable};
+use itertools::Itertools;
+
+use utils::{shortest_paths, AocBufReader, DijkstraSearchable};
 
 fn main() {
     part_1(AocBufReader::from_string("aoc/src/day_21/data/part_1.txt"));
+    part_2(AocBufReader::from_string("aoc/src/day_21/data/part_1.txt"));
 }
 
 fn part_1(input: AocBufReader) {
@@ -11,9 +14,12 @@ fn part_1(input: AocBufReader) {
 }
 
 fn part_1_inner(input: impl Iterator<Item = String>) -> usize {
+    let num_pad_cache = build_num_pad_cache();
+    let dir_pad_cache = build_dir_pad_cache();
+
     let mut result: usize = 0;
     for line in input {
-        let shortest_sequence = shortest_sequence(&line[..], 2);
+        let shortest_sequence = shortest_sequence(&line[..], 2, &num_pad_cache, &dir_pad_cache);
         let val = line[..(line.len() - 1)].parse::<usize>().unwrap();
         println!("shortest sequence: {}, val: {}", shortest_sequence, val);
         result += shortest_sequence * val
@@ -22,33 +28,175 @@ fn part_1_inner(input: impl Iterator<Item = String>) -> usize {
     result
 }
 
-fn shortest_sequence(sequence: &str, n_operators: usize) -> usize {
-    let numeric_key_presses: Vec<_> = sequence
-        .chars()
-        .map(NumericKeypadPosition::from_char)
-        .collect();
+fn part_2(input: AocBufReader) {
+    println!("part 2: {}", part_2_inner(input))
+}
 
-    let operators: Vec<_> = (0..n_operators)
-        .map(|_| DirectionalKeypadPosition::A)
-        .collect();
-    let start = State::new(operators.clone(), NumericKeypadPosition::A);
+type NumPadCache = HashMap<(NumericKeypadPosition, NumericKeypadPosition), String>;
+type DirPadCache = HashMap<(DirectionalKeypadPosition, DirectionalKeypadPosition), String>;
 
-    let mut check_points: Vec<State> = vec![start];
-    check_points.extend(
-        numeric_key_presses
-            .into_iter()
-            .map(|x| State::new(operators.clone(), x)),
-    );
+fn part_2_inner(input: AocBufReader) -> usize {
+    let num_pad_cache = build_num_pad_cache();
+    let dir_pad_cache = build_dir_pad_cache();
 
-    let mut n_pushes: usize = 0;
-    for idx in 0..(check_points.len() - 1) {
-        let from = &check_points[idx];
-        let to = &check_points[idx + 1];
-        n_pushes +=
-            shortest_path_length(Me::new(), from.clone(), HashSet::from([to.clone()])).unwrap() + 1;
+    let mut result: usize = 0;
+    for line in input {
+        let shortest_sequence = shortest_sequence(&line[..], 2, &num_pad_cache, &dir_pad_cache);
+        let val = line[..(line.len() - 1)].parse::<usize>().unwrap();
+        println!("shortest sequence: {}, val: {}", shortest_sequence, val);
+        result += shortest_sequence * val
     }
 
-    n_pushes
+    result
+}
+
+fn shortest_sequence(
+    sequence: &str,
+    n_operators: usize,
+    num_pad_cache: &NumPadCache,
+    dir_pad_cache: &DirPadCache,
+) -> usize {
+    let mut numeric_key_presses = vec![NumericKeypadPosition::A];
+    numeric_key_presses.extend(sequence.chars().map(NumericKeypadPosition::from_char));
+
+    let input_for_num_pad: String = numeric_key_presses
+        .windows(2)
+        .map(|slice| {
+            let mut seq = num_pad_cache
+                .get(&(slice[0].clone(), slice[1].clone()))
+                .unwrap()
+                .clone();
+            seq.push('A');
+            seq
+        })
+        .collect();
+
+    let mut input_at_layer = input_for_num_pad;
+    for _ in 0..n_operators {
+        // the operator starts at A
+        input_at_layer = shortest_seq_inner(input_at_layer, dir_pad_cache);
+    }
+
+    input_at_layer.len()
+}
+
+fn shortest_seq_inner(sequence: String, dir_pad_cache: &DirPadCache) -> String {
+    // the operator starts at A
+    format!("A{}", sequence)
+        .chars()
+        .tuple_windows::<(_, _)>()
+        .map(|(f, t)| {
+            let mut seq = dir_pad_cache
+                .get(&(
+                    DirectionalKeypadPosition::from_char(f),
+                    DirectionalKeypadPosition::from_char(t),
+                ))
+                .unwrap()
+                .clone();
+            // We actually have to push the intended button
+            seq.push('A');
+            seq
+        })
+        .collect()
+}
+
+fn build_num_pad_cache() -> HashMap<(NumericKeypadPosition, NumericKeypadPosition), String> {
+    let mut cache = HashMap::new();
+    for (from, to) in NumericKeypadPosition::members()
+        .into_iter()
+        .cartesian_product(NumericKeypadPosition::members())
+    {
+        if from == to {
+            cache.insert((from, to), "".to_string());
+            continue;
+        }
+
+        let start = State::new(
+            vec![DirectionalKeypadPosition::A, DirectionalKeypadPosition::A],
+            from.clone(),
+        );
+
+        let end = State::new(
+            vec![DirectionalKeypadPosition::A, DirectionalKeypadPosition::A],
+            to.clone(),
+        );
+
+        let (_, paths) = shortest_paths(Me::new(), start, HashSet::from([end])).unwrap();
+        let mut entry: Vec<NumericKeypadPosition> = vec![];
+        for x in paths[0].iter() {
+            if entry.last().is_none() || &x.numeric_pad_operator != entry.last().unwrap() {
+                entry.push(x.numeric_pad_operator.clone());
+            }
+        }
+
+        let mut result = String::new();
+        for idx in 0..(entry.len() - 1) {
+            let c = entry[idx]
+                .neighbors()
+                .iter()
+                .find(|(n, _)| &entry[idx + 1] == n)
+                .map(|(_, key)| key.as_char())
+                .unwrap();
+            result.push(c);
+        }
+        cache.insert((from, to), result);
+    }
+
+    cache
+}
+
+fn build_dir_pad_cache() -> HashMap<(DirectionalKeypadPosition, DirectionalKeypadPosition), String>
+{
+    let mut cache = HashMap::new();
+    for (from, to) in DirectionalKeypadPosition::members()
+        .into_iter()
+        .cartesian_product(DirectionalKeypadPosition::members())
+    {
+        if from == to {
+            cache.insert((from, to), "".to_string());
+            continue;
+        }
+
+        let start = State::new(
+            vec![
+                DirectionalKeypadPosition::A,
+                DirectionalKeypadPosition::A,
+                from.clone(),
+            ],
+            NumericKeypadPosition::A, // irrelevant
+        );
+
+        let end = State::new(
+            vec![
+                DirectionalKeypadPosition::A,
+                DirectionalKeypadPosition::A,
+                to.clone(),
+            ],
+            NumericKeypadPosition::A,
+        );
+
+        let (_, paths) = shortest_paths(Me::new(), start, HashSet::from([end])).unwrap();
+        let mut entry: Vec<DirectionalKeypadPosition> = vec![];
+        for x in paths[0].iter() {
+            if entry.last().is_none() || &x.directional_pad_operators[2] != entry.last().unwrap() {
+                entry.push(x.directional_pad_operators[2].clone());
+            }
+        }
+
+        let mut result = String::new();
+        for idx in 0..(entry.len() - 1) {
+            let c = entry[idx]
+                .neighbors()
+                .iter()
+                .find(|(n, _)| &entry[idx + 1] == n)
+                .map(|(_, key)| key.as_char())
+                .unwrap();
+            result.push(c);
+        }
+        cache.insert((from, to), result);
+    }
+
+    cache
 }
 
 struct Me;
@@ -60,7 +208,7 @@ impl Me {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct State {
     directional_pad_operators: Vec<DirectionalKeypadPosition>,
     numeric_pad_operator: NumericKeypadPosition,
@@ -227,6 +375,22 @@ impl NumericKeypadPosition {
             _ => panic!("bad numeric pad char {}!", c),
         }
     }
+
+    fn members() -> Vec<Self> {
+        vec![
+            Self::_9,
+            Self::_8,
+            Self::_7,
+            Self::_6,
+            Self::_5,
+            Self::_4,
+            Self::_3,
+            Self::_2,
+            Self::_1,
+            Self::_0,
+            Self::A,
+        ]
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -266,6 +430,31 @@ impl DirectionalKeypadPosition {
                 (Self::A, Self::Up),
             ],
         }
+    }
+
+    fn as_char(&self) -> char {
+        match self {
+            Self::Up => '^',
+            Self::Left => '<',
+            Self::Down => 'v',
+            Self::Right => '>',
+            Self::A => 'A',
+        }
+    }
+
+    fn from_char(c: char) -> Self {
+        match c {
+            '>' => Self::Right,
+            'v' => Self::Down,
+            '^' => Self::Up,
+            '<' => Self::Left,
+            'A' => Self::A,
+            _ => panic!("bad char for directional pad: {}", c),
+        }
+    }
+
+    fn members() -> Vec<Self> {
+        vec![Self::Up, Self::Left, Self::Down, Self::Right, Self::A]
     }
 }
 
