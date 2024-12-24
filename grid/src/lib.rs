@@ -9,7 +9,7 @@ use num::Integer;
 
 use coord_2d::Coord2D;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Grid<T: Copy + Display + PartialEq> {
     inner: Vec<Vec<T>>,
     pub n_rows: usize,
@@ -66,6 +66,27 @@ impl<T: Copy + Display + PartialEq> Grid<T> {
                     .map(move |(col_idx, _)| Coord2D::new(row_idx, col_idx))
             })
             .collect::<HashSet<Coord2D<usize>>>()
+    }
+
+    /// Find every (row, col) whose value matches needle
+    pub fn find_one(&self, needle: T) -> Coord2D<usize> {
+        let all = self
+            .inner
+            .iter()
+            .enumerate()
+            .flat_map(|(row_idx, row)| {
+                row.iter()
+                    .enumerate()
+                    .filter(|(_, &val)| val == needle)
+                    .map(move |(col_idx, _)| Coord2D::new(row_idx, col_idx))
+            })
+            .collect::<Vec<Coord2D<usize>>>();
+
+        if all.len() != 1 {
+            panic!("too many or too few to find just one");
+        }
+
+        all.into_iter().next().unwrap()
     }
 
     pub fn row(&self, row_idx: usize) -> Vec<T> {
