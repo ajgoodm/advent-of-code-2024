@@ -13,7 +13,38 @@ fn part_1(input: AocBufReader) {
     let mut adding_machine = AddingMachine::from_input(input);
     println!("part 1: {}", adding_machine.part_1());
 }
-
+/// The adding machine is a standard design
+/// https://content.instructables.com/F3M/5KQ6/GHZ6XYFE/F3M5KQ6GHZ6XYFE.bmp
+///
+/// the value of an output bit z_n is the XOR of the two input bits
+/// (x_n and y_n) further XORed with a value that represents
+/// "carrying the 1" when the output of the previous bit had 3
+/// one values (x_n_1, y_n_1 were both one or the inputs to the
+/// prebious bit were both 1). We can debug the buggy adding machine
+/// by printing out the sum of incrementally larger numbers composed
+/// entirely of 1's and observing when the sum has an error
+///
+///              z_n
+///               |
+///               ^
+///             /XOR\
+///            <----->
+///           /       \
+///   (in_n_a) A         B (in_n_b)
+///          |          \__
+///          ^             ^
+///        /OR \         /XOR\
+///       <----->       <----->
+///       |     |       |     |
+///       C     D       x_n   y_n
+///       |      \____
+///       ^           ^
+///     /AND\       /AND\
+///    <----->     <----->__
+///    |     |     |        \
+///  x_n-1 y_n-1  in_n-1_a  in_n-1_b
+///
+///
 fn part_2(input: AocBufReader) {
     let original_adding_machine = AddingMachine::from_input(input);
 
