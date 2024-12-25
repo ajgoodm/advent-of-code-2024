@@ -1,15 +1,70 @@
 use std::collections::{HashMap, HashSet};
+use std::iter;
 
 use itertools::Itertools;
 use utils::AocBufReader;
 
 fn main() {
     part_1(AocBufReader::from_string("aoc/src/day_24/data/part_1.txt"));
+    part_2(AocBufReader::from_string("aoc/src/day_24/data/part_1.txt"));
 }
 
 fn part_1(input: AocBufReader) {
-    let mut system = System::from_input(input);
-    println!("part 1: {}", system.part_1());
+    let mut adding_machine = AddingMachine::from_input(input);
+    println!("part 1: {}", adding_machine.part_1());
+}
+
+fn part_2(input: AocBufReader) {
+    let original_adding_machine = AddingMachine::from_input(input);
+
+    // all of the initial wire states (constant inputs) are arguments to
+    // our adding machine, x\d{2} or y\d{2}.
+    // our inputs have 45 bits
+    for wire in original_adding_machine.wire_states.keys() {
+        assert!(wire.starts_with('x') || wire.starts_with('y'))
+    }
+
+    let fixes = [
+        ("vkq", "z11"),
+        ("z24", "mmk"),
+        ("pvb", "qdq"),
+        ("hqh", "z38"),
+    ];
+
+    let mut adding_machine_v1 = original_adding_machine.clone();
+    for &(x, y) in fixes.iter() {
+        adding_machine_v1.swap(x, y);
+    }
+
+    // prior to fixing the adding machine, this block prints output like this,
+    // revealing some errors. This is helpful because adding is recursive with
+    // each bit relying on the state of less significant bits.
+    //
+    //   ** arguments have 11 ones! vkq <-> z11
+    //   z: 01111 11111 10100 000000000000000000000000000000
+    //
+    //   ** argumenst have 24 ones! z24 <-> mmk
+    //   z: 01111 11111 11111 11111 11110 10000000000000000000
+    //
+    //   ** arguments have 29 ones! pvp <-> qdq
+    //   z: 01111 11111 11111 11111 11111 11101 000000000000000
+    //
+    //   ** arguments have 38 ones! z38 <-> hqh
+    //   z: 01111 11111 11111 11111 11111 11111 11111 11101 00000
+    for n_ones in 0..45 {
+        let all_ones = iter::repeat_n('1', n_ones).collect::<String>();
+        let mut adding_machine = adding_machine_v1.clone();
+        adding_machine.set_inputs(&all_ones, &all_ones);
+        println!("\n** arguments have {} ones!", n_ones);
+        adding_machine.print_z();
+    }
+
+    let sorted_wires: Vec<_> = fixes
+        .into_iter()
+        .flat_map(|(x, y)| iter::once(x).chain(iter::once(y)))
+        .sorted()
+        .collect();
+    println!("part 2: {}", sorted_wires.join(","));
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -30,13 +85,14 @@ impl BinOp {
     }
 }
 
-struct System {
+#[derive(Clone)]
+struct AddingMachine {
     wires: HashSet<String>,
     wire_states: HashMap<String, bool>,
     dependencies: HashMap<String, BinOp>,
 }
 
-impl System {
+impl AddingMachine {
     fn part_1(&mut self) -> usize {
         let z_wires: Vec<_> = self
             .wires
@@ -93,6 +149,76 @@ impl System {
 
         self.wire_states.insert(wire.clone(), result);
         result
+    }
+
+    fn swap(&mut self, output_1: &str, output_2: &str) {
+        let x = self.dependencies.get(output_1).unwrap().clone();
+        let y = self.dependencies.get(output_2).unwrap().clone();
+
+        self.dependencies.insert(output_1.to_string(), y);
+        self.dependencies.insert(output_2.to_string(), x);
+    }
+
+    fn print_z(&mut self) {
+        println!(
+            "z: {}",
+            (0..45)
+                .map(|idx| {
+                    match self.get_wire_value(&AddingMachine::z_key_for_idx(idx)) {
+                        true => '1',
+                        false => '0',
+                    }
+                })
+                .collect::<String>()
+        );
+    }
+
+    /// take values for x in y in binary represented as strings
+    /// of 0 and 1; zero out x and y and set the relevant bits
+    /// (starting at least significant)
+    fn set_inputs(&mut self, x: &str, y: &str) {
+        if x.len() > 45 || y.len() > 45 {
+            panic!("adding machine only has 45 bits")
+        }
+
+        for idx in 0..45 {
+            self.wire_states
+                .insert(AddingMachine::x_key_for_idx(idx), false);
+            self.wire_states
+                .insert(AddingMachine::y_key_for_idx(idx), false);
+        }
+
+        for (idx, c) in x.chars().enumerate() {
+            let val = match c {
+                '0' => false,
+                '1' => true,
+                _ => panic!("there's no such thing as 3s"),
+            };
+            self.wire_states
+                .insert(AddingMachine::x_key_for_idx(idx), val);
+        }
+
+        for (idx, c) in y.chars().enumerate() {
+            let val = match c {
+                '0' => false,
+                '1' => true,
+                _ => panic!("there's no such thing as 3s"),
+            };
+            self.wire_states
+                .insert(AddingMachine::y_key_for_idx(idx), val);
+        }
+    }
+
+    fn x_key_for_idx(idx: usize) -> String {
+        format!("x{:0>2}", idx)
+    }
+
+    fn y_key_for_idx(idx: usize) -> String {
+        format!("y{:0>2}", idx)
+    }
+
+    fn z_key_for_idx(idx: usize) -> String {
+        format!("z{:0>2}", idx)
     }
 
     fn from_input(mut input: impl Iterator<Item = String>) -> Self {
